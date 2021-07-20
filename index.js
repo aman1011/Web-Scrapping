@@ -38,78 +38,62 @@ async function get_data() {
       });
       console.log('\nThere are total', data)
 
+      // Looping over the page number. We don't know the exact
+      // number of pages for job each job category in each city.
+      pageCount = 1;
+      morePagePresent = true
+      while (morePagePresent) {
+        page.goto('https://apna.co/jobs/'+category+'-jobs-in-' + city + "?page=" + pageCount);
+        console.log("Hitting the URL " + 'https://apna.co/jobs/'+category+'-jobs-in-' + city + "?page=" + pageCount);
+        await page.waitForSelector('body');
 
-      page.goto('https://apna.co/jobs/'+category+'-jobs-in-' + city);
-      await page.waitForSelector('body');
+        const data1 = await page.evaluate(() => {
+          return document.querySelector('h1[class="sc-17svb7l-2 dAKBvj"]').innerHTML
+        });
+        if ( !data1 ) {
+          console.log("No more jobs on this page ...!")
+          morePagePresent = false
+        }
 
-      const data1 = await page.evaluate(() => {
-        return document.querySelector('h1[class="sc-17svb7l-2 dAKBvj"]').innerHTML
-      });
+        if (! morePagePresent) {
+          continue;
+        }
+        //console.log('There are total', data1)
 
-      console.log('There are total', data1)
-      //console.log('\n1 job which suits your choice is:')
+        // getting the all the nodes for the jobs.
+        // one thing to note here is the pagination.
+        // hit the url with pagination and check for the returned
+        // data. if undefined we have run out of the pages.
+        var jobNodes = await page.evaluate(() => {
+          let nodes = document.querySelectorAll('div[class="e8x9ni-0 jyAzZx"]>a');
+          let jobs = []
+          nodes.forEach(element => {
+            jobs.push(element.innerText)
+          })
+          //return document.querySelectorAll('div[class="e8x9ni-0 jyAzZx"]>a')[0].innerText
+          return jobs;
+        });
 
-      /*job name */
-      // getting the all the nodes for the jobs.
-      // one thing to note here is the pagination.
-      // hit the url with pagination and check for the returned
-      // data. if undefined we have run out of the pages.
-      var jobNodes = await page.evaluate(() => {
-        let nodes = document.querySelectorAll('div[class="e8x9ni-0 jyAzZx"]>a');
-        let jobs = []
-        nodes.forEach(element => {
-          jobs.push(element.innerText)
-        })
-        //return document.querySelectorAll('div[class="e8x9ni-0 jyAzZx"]>a')[0].innerText
-        return jobs;
-      });
+        //console.log("The number of jobs" + jobNodes.length);
+        jobNodes.forEach(element => {
+          //  splitting the job node on the basis of new-line character.
+          jobDetails = element.split("\n");
+          jobLookup = {};
+          jobLookup['Job Title'] = jobDetails[0];
+          jobLookup['Company'] = jobDetails[2];
+          jobLookup['Salary'] = jobDetails[4];
+          jobLookup['Experience'] = jobDetails[6];
+          jobLookup['Education'] = jobDetails[8];
+          console.log(jobLookup);
+        });
+        //console.log("Number of job nodes " + jobNodes[);
+        const data2 = await page.evaluate(() => {
+          return document.querySelector('p[class="sc-1y4fh76-4 fMBjOI"]').innerText
+        });
 
-      console.log("The numbr of jobs" + jobNodes.length);
-      jobNodes.forEach(element => {
-        //  splitting the job node on the basis of new-line character.
-        jobDetails = element.split("\n");
-        jobLookup = {};
-        jobLookup['Job Title'] = jobDetails[0];
-        jobLookup['Company'] = jobDetails[2];
-        jobLookup['Salary'] = jobDetails[4];
-        jobLookup['Experience'] = jobDetails[6];
-        jobLookup['Education'] = jobDetails[8];
-        console.log(jobLookup);
-      });
-      //console.log("Number of job nodes " + jobNodes[);
-      const data2 = await page.evaluate(() => {
-        return document.querySelector('p[class="sc-1y4fh76-4 fMBjOI"]').innerText
-      });
-
-      console.log('\nJob Name:',data2)
-
-      /*job company */
-      const data3 = await page.evaluate(() => {
-        return document.querySelector('p[class="sc-1y4fh76-5 bXUidx"]').innerText
-      });
-
-      console.log('Company Name:',data3)
-
-      /*salary */
-      const data4 = await page.evaluate(() => {
-        return document.querySelector('p[class="sc-1y4fh76-6 lksWMy"]').innerText
-      });
-
-      console.log('Salary Offered:',data4)
-    
-      /*experience */
-      const data5 = await page.evaluate(() => {
-        return document.querySelector('p[class="sc-1y4fh76-12 bspSEn"]').innerText
-      });
-
-      console.log('Experience Required:',data5)
-
-      /*address */
-      const data6 = await page.evaluate(() => {
-        return document.querySelector('p[class="sc-1y4fh76-17 gIfa-de"]').innerText
-      });
-
-    }
+        pageCount++;
+      }
+    } 
   } 
 
   await browser.close();
