@@ -1,6 +1,6 @@
-let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
+//let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
 let categories = ["technician", "marketing", "human_resource"]
-//let cities = ['kanpur']
+let cities = ['kanpur']
 
 console.log("\nThis program scrapes jobs from Apna.co")
 "use strict";
@@ -16,9 +16,9 @@ console.log("\nThis program scrapes jobs from Apna.co")
 /*Scrapping */
 const { exit } = require('process');
 const puppeteer = require('puppeteer');
+const fs = require('fs')
 
-
-
+dataToWrite = "Job Title" + ", " + "Company" + ", " + "Salary" + ", " + "Experience" + ", " + "Education" + "\n";
 async function get_data() {
   const browser = await puppeteer.launch();
   const page =  await browser.newPage();
@@ -84,6 +84,8 @@ async function get_data() {
           jobLookup['Salary'] = jobDetails[4];
           jobLookup['Experience'] = jobDetails[6];
           jobLookup['Education'] = jobDetails[8];
+          dataLine = jobLookup['Job Title'] + ', ' + jobLookup['Company'] + ', ' + jobLookup['Salary'].substring(1) + ', ' + jobLookup['Experience'] + ', ' + jobLookup['Education'] + "\n";
+          dataToWrite = dataToWrite + dataLine;
           console.log(jobLookup);
         });
         //console.log("Number of job nodes " + jobNodes[);
@@ -95,10 +97,34 @@ async function get_data() {
       }
     } 
   } 
-
-  await browser.close();
-  return ;
+  console.log(dataToWrite);
+  writeToCSVFile(dataToWrite);
+  try {
+    await browser.close();
+  } catch (error) {
+    console.log("Typical browser error at the end ....!");
+  }
+  
+  return dataToWrite;
 }
 
-get_data()
+
+function writeToCSVFile(data) {
+  const filename = 'output.csv';
+  fs.writeFile(filename, dataToWrite, err => {
+    if (err) {
+      console.log('Error writing to csv file', err);
+    } else {
+      console.log(`saved as ${filename}`);
+    }
+  });
+}
+
+
+
+data = get_data();
+//console.log(data);
+//writeToCSVFile(data);
+
+
 
