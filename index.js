@@ -1,9 +1,12 @@
+
+
+
 //let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
+
+
 let categories = ["technician", "marketing", "human_resource"]
 let cities = ['kanpur']
 
-console.log("\nThis program scrapes jobs from Apna.co")
-"use strict";
 
 
 /*Input */
@@ -17,6 +20,8 @@ console.log("\nThis program scrapes jobs from Apna.co")
 const { exit } = require('process');
 const puppeteer = require('puppeteer');
 const fs = require('fs')
+const { Pool, Client } = require('pg')
+
 
 dataToWrite = "Job Title" + ", " + "Company" + ", " + "Salary" + ", " + "Experience" + ", " + "Education" + "\n";
 async function get_data() {
@@ -25,7 +30,61 @@ async function get_data() {
 
   /*City */
   for (var i = 0; i < cities.length; i++) {
+
+    client = new Client({
+      host: 'localhost',database: 'scrapper'
+    })
+    client.connect()
+
+    // check if the city data is present in the database.
+    // If not, then add.
+    var sql_statement = "SELECT * FROM city WHERE name = $1";
+    client.query(sql_statement, [cities[i]], (err, result) => {
+      if (err) throw err;
+      if (result.rowCount == 0) {
+        // Insert data for the city.
+    
+        var sql_statement = "INSERT INTO city(name) VALUES($1) RETURNING ID";
+        client.query(sql_statement, [cities[i]], (err, result) => {
+          if (err) throw err;
+          console.log(err, result);
+          client.query("COMMIT", (err, result) => {
+            if (err) {
+              console.log("Erorr while committing ....")
+              console.log(err);
+            } 
+          })
+        })
+      }
+    }) 
+
+
+    
     for (var j = 0; j < categories.length; j++) {
+
+      // check if the category data is present in the database.
+      // If not, then add.
+      var sql_statement = "SELECT * FROM category WHERE name = $1";
+      client.query(sql_statement, [categories[i]], (err, result) => {
+        if (err) throw err;
+        if (result.rowCount == 0) {
+          // Insert data for the category.
+    
+          var sql_statement = "INSERT INTO category(name) VALUES($1) RETURNING ID";
+          client.query(sql_statement, [categories[i]], (err, result) => {
+            if (err) throw err;
+            console.log(err, result);
+            client.query("COMMIT", (err, result) => {
+              if (err) {
+                console.log("Erorr while committing ....")
+                console.log(err);
+              } 
+            })
+          })
+        }
+      })
+
+
       city = cities[i];
       category = categories[j];
 
@@ -125,6 +184,8 @@ function writeToCSVFile(data) {
 data = get_data();
 //console.log(data);
 //writeToCSVFile(data);
+
+
 
 
 
