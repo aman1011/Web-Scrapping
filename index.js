@@ -1,7 +1,7 @@
 
 
 
-//let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
+let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
 
 
 let categories = ["technician", "marketing", "human_resource"]
@@ -35,7 +35,8 @@ async function get_data() {
       host: 'localhost',database: 'scrapper'
     })
     client.connect()
-
+    global.city_id;
+    global.category_id;
     // check if the city data is present in the database.
     // If not, then add.
     var sql_statement = "SELECT * FROM city WHERE name = $1";
@@ -55,6 +56,11 @@ async function get_data() {
             } 
           })
         })
+      }
+      else {
+        city_id = result.rows[0].id
+        console.log("City id is ")
+        console.log(city_id)
       }
     }) 
 
@@ -81,6 +87,11 @@ async function get_data() {
               } 
             })
           })
+        }
+        else {
+          category_id = result.rows[0].id
+          console.log("Category Id is ")
+          console.log(category_id)
         }
       })
 
@@ -146,6 +157,13 @@ async function get_data() {
           dataLine = jobLookup['Job Title'] + ', ' + jobLookup['Company'] + ', ' + jobLookup['Salary'].substring(1) + ', ' + jobLookup['Experience'] + ', ' + jobLookup['Education'] + "\n";
           dataToWrite = dataToWrite + dataLine;
           console.log(jobLookup);
+
+          // Make entry in the database for this job.
+          insert_query = "INSERT INTO jobs (city_id, category_id, job_title, experience, education, salary, company_name) VALUES($1, $2, $3, $4, $5, $6, $7)"
+          client.query(insert_query, [city_id, category_id, jobDetails[0], jobDetails[6], jobDetails[8], jobDetails[4], jobDetails[2]], (err, result) => {
+            if (err) throw err;
+            console.log("Inserted document ....")
+          })
         });
         //console.log("Number of job nodes " + jobNodes[);
         const data2 = await page.evaluate(() => {
