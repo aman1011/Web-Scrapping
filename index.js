@@ -207,20 +207,43 @@ function insert_into_data(to_insert) {
   });
 }
 
-
+/*
 async function put_data () {
   data = await get_data()
   //console.log(data)
   //console.log(data.length)
   return data
 }
+*/
 
+get_data().then(res => {
+  to_insert.forEach(element => {
+    var search_sql = "SELECT * from jobs where city_id = " + element[0] + 
+      " and category_id = " + element[1] + 
+      " and job_title =  '" + element[2] + "'" +
+      " and experience =  '" + element[3]  + "'" +
+      " and education = '" + element[4] + "'" +
+      " and salary = '" + element[5] + "'" + 
+      " and company_name = '" + element[6] + "'"
 
-put_data().then(res => {
-  console.log(res.length)
-  insert_into_data(res)
+    // console.log(search_sql);
+    client.query(search_sql, (err, res) => {
+      if (err) throw err;
+      if (res.rowCount == 0) {
+        // Insert the data.
+        insert_query = "INSERT INTO jobs (city_id, category_id, job_title, experience, education, salary, company_name) VALUES($1, $2, $3, $4, $5, $6, $7)"
+        client.query(insert_query, [element[0],element[1],element[2],element[3],element[4],element[5],element[6]], (err, result) => {
+          if (err) throw err;
+        })
+      }
+      else {
+        "The job is already present in the database ...."
+      }
+    })
+  });
   exit(0);
 })
+
 
 
 //console.log(to_put)
