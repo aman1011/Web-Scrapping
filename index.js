@@ -1,19 +1,5 @@
-
-
-
 let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
-
-
-let categories = ["technician", "marketing", "human_resource"]
-let cities = ['kanpur']
-
-
-
-/*Input */
-//const ps = require("prompt-sync");
-//const prompt = ps();
-//let city = prompt("You want job in which city? ").toLowerCase();
-//let category=prompt("What type of job do you want? Select a category(Technician/IT_Support/Marketing/Human_Resource/Teacher/Graphic_Designer/etc.): ").toLowerCase();
+let categories = ["technician", "marketing", "human_resource"];
 
 
 /*Scrapping */
@@ -30,9 +16,11 @@ async function get_data() {
 
   /*City */
   for (var i = 0; i < cities.length; i++) {
+    console.log("Processing city " + cities[i] + " ....")
 
     client = new Client({
-      host: 'localhost',database: 'scrapper'
+      host: 'localhost',
+      database: 'scrapper'
     })
     client.connect()
     global.city_id;
@@ -46,9 +34,9 @@ async function get_data() {
         // Insert data for the city.
     
         var sql_statement = "INSERT INTO city(name) VALUES($1) RETURNING ID";
-        client.query(sql_statement, [cities[i]], (err, result) => {
+        client.query(sql_statement, [cities[i]], (err, res) => {
           if (err) throw err;
-          console.log(err, result);
+          city_id = res.rows[0].id;
           client.query("COMMIT", (err, result) => {
             if (err) {
               console.log("Erorr while committing ....")
@@ -59,27 +47,28 @@ async function get_data() {
       }
       else {
         city_id = result.rows[0].id
-        console.log("City id is ")
-        console.log(city_id)
+        //console.log("City id is ")
+        //console.log(city_id)
       }
     }) 
 
 
     
     for (var j = 0; j < categories.length; j++) {
+      console.log("Processing category " + categories[j] + " ....");
 
       // check if the category data is present in the database.
       // If not, then add.
       var sql_statement = "SELECT * FROM category WHERE name = $1";
-      client.query(sql_statement, [categories[i]], (err, result) => {
+      client.query(sql_statement, [categories[j]], (err, result) => {
         if (err) throw err;
         if (result.rowCount == 0) {
           // Insert data for the category.
     
           var sql_statement = "INSERT INTO category(name) VALUES($1) RETURNING ID";
-          client.query(sql_statement, [categories[i]], (err, result) => {
+          client.query(sql_statement, [categories[j]], (err, res) => {
             if (err) throw err;
-            console.log(err, result);
+            category_id = res.rows[0].id;
             client.query("COMMIT", (err, result) => {
               if (err) {
                 console.log("Erorr while committing ....")
@@ -90,8 +79,8 @@ async function get_data() {
         }
         else {
           category_id = result.rows[0].id
-          console.log("Category Id is ")
-          console.log(category_id)
+          //console.log("Category Id is ")
+          //console.log(category_id)
         }
       })
 
@@ -106,7 +95,7 @@ async function get_data() {
       const data = await page.evaluate(() => {
         return document.querySelector('section[class="sc-17svb7l-0 iqnvTl"]>h1').innerText 
       });
-      console.log('\nThere are total', data)
+
 
       // Looping over the page number. We don't know the exact
       // number of pages for job each job category in each city.
@@ -114,7 +103,7 @@ async function get_data() {
       morePagePresent = true
       while (morePagePresent) {
         page.goto('https://apna.co/jobs/'+category+'-jobs-in-' + city + "?page=" + pageCount);
-        console.log("Hitting the URL " + 'https://apna.co/jobs/'+category+'-jobs-in-' + city + "?page=" + pageCount);
+        //console.log("Hitting the URL " + 'https://apna.co/jobs/'+category+'-jobs-in-' + city + "?page=" + pageCount);
         await page.waitForSelector('body');
 
         const data1 = await page.evaluate(() => {
@@ -148,24 +137,34 @@ async function get_data() {
         jobNodes.forEach(element => {
           //  splitting the job node on the basis of new-line character.
           jobDetails = element.split("\n");
+          //console.log(jobDetails);
           jobLookup = {};
           jobLookup['Job Title'] = jobDetails[0];
           jobLookup['Company'] = jobDetails[2];
           jobLookup['Salary'] = jobDetails[4];
-          jobLookup['Experience'] = jobDetails[6];
-          jobLookup['Education'] = jobDetails[8];
+          jobLookup['Experience'] = jobDetails[8];
+          jobLookup['Education'] = jobDetails[12];
           dataLine = jobLookup['Job Title'] + ', ' + jobLookup['Company'] + ', ' + jobLookup['Salary'].substring(1) + ', ' + jobLookup['Experience'] + ', ' + jobLookup['Education'] + "\n";
           dataToWrite = dataToWrite + dataLine;
-          console.log(jobLookup);
-
-          // Make entry in the database for this job.
-          insert_query = "INSERT INTO jobs (city_id, category_id, job_title, experience, education, salary, company_name) VALUES($1, $2, $3, $4, $5, $6, $7)"
-          client.query(insert_query, [city_id, category_id, jobDetails[0], jobDetails[6], jobDetails[8], jobDetails[4], jobDetails[2]], (err, result) => {
+          //console.log(jobLookup);
+          
+          // Check if entry in the jobs is already present.
+          var search_sql = "SELECT * from jobs where city_id = $1 and category_id = $2 and job_title = $3 and experience = $4 and education = $5 and salary = $6 and company_name = $7";
+          client.query(search_sql, [city_id, category_id, jobDetails[0], jobDetails[8], jobDetails[12], jobDetails[4], jobDetails[2]], (err, result) => {
             if (err) throw err;
-            console.log("Inserted document ....")
+            if (result.rowCount == 0) {
+              console.log("Inserting row with following values ....");
+              console.log(city_id + " " + category_id + " " +  jobDetails[0] + " " +  jobDetails[8] + " " +  jobDetails[12] + " " +  jobDetails[4] + " " +  jobDetails[2]);
+              insert_query = "INSERT INTO jobs (city_id, category_id, job_title, experience, education, salary, company_name) VALUES($1, $2, $3, $4, $5, $6, $7)"
+              client.query(insert_query, [city_id, category_id, jobDetails[0], jobDetails[8], jobDetails[12], jobDetails[4], jobDetails[2]], (err, result) => {
+                if (err) throw err;
+              })              
+            }
+            else {
+              console.log("Job already exists in database ....");
+            }
           })
         });
-        //console.log("Number of job nodes " + jobNodes[);
         const data2 = await page.evaluate(() => {
           return document.querySelector('p[class="sc-1y4fh76-4 fMBjOI"]').innerText
         });
@@ -198,10 +197,8 @@ function writeToCSVFile(data) {
 }
 
 
-
 data = get_data();
-//console.log(data);
-//writeToCSVFile(data);
+
 
 
 
