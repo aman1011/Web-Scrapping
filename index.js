@@ -217,6 +217,7 @@ async function put_data () {
 */
 
 get_data().then(res => {
+  console.log(res.length)
   to_insert.forEach(element => {
     var search_sql = "SELECT * from jobs where city_id = " + element[0] + 
       " and category_id = " + element[1] + 
@@ -241,7 +242,6 @@ get_data().then(res => {
       }
     })
   });
-  exit(0);
 })
 
 
