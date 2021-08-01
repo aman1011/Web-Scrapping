@@ -1,12 +1,13 @@
-let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
+//let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
 let categories = ["technician", "marketing", "human_resource"];
-
+let cities = ['kanpur'];
 
 /*Scrapping */
 const { exit } = require('process');
 const puppeteer = require('puppeteer');
 const fs = require('fs')
-const { Pool, Client } = require('pg')
+const { Pool, Client } = require('pg');
+const { Console } = require('console');
 
 
 dataToWrite = "Job Title" + ", " + "Company" + ", " + "Salary" + ", " + "Experience" + ", " + "Education" + "\n";
@@ -149,21 +150,23 @@ async function get_data() {
           //console.log(jobLookup);
           
           // Check if entry in the jobs is already present.
-          var search_sql = "SELECT * from jobs where city_id = $1 and category_id = $2 and job_title = $3 and experience = $4 and education = $5 and salary = $6 and company_name = $7";
-          client.query(search_sql, [city_id, category_id, jobDetails[0], jobDetails[8], jobDetails[12], jobDetails[4], jobDetails[2]], (err, result) => {
-            if (err) throw err;
-            if (result.rowCount == 0) {
+          //var search_sql = "SELECT * from jobs where city_id = $1 and category_id = $2 and job_title = $3 and experience = $4 and education = $5 and salary = $6 and company_name = $7";
+          //console.log("Checking the row with the following value ....")
+          //console.log(city_id + " " + category_id + " " +  jobDetails[0] + " " +  jobDetails[8] + " " +  jobDetails[12] + " " +  jobDetails[4] + " " +  jobDetails[2]);
+          //client.query(search_sql, [city_id, category_id, jobDetails[0], jobDetails[8], jobDetails[12], jobDetails[4], jobDetails[2]], (err, result) => {
+          //  if (err) throw err;
+           // if (result.rowCount == 0) {
               console.log("Inserting row with following values ....");
               console.log(city_id + " " + category_id + " " +  jobDetails[0] + " " +  jobDetails[8] + " " +  jobDetails[12] + " " +  jobDetails[4] + " " +  jobDetails[2]);
               insert_query = "INSERT INTO jobs (city_id, category_id, job_title, experience, education, salary, company_name) VALUES($1, $2, $3, $4, $5, $6, $7)"
               client.query(insert_query, [city_id, category_id, jobDetails[0], jobDetails[8], jobDetails[12], jobDetails[4], jobDetails[2]], (err, result) => {
                 if (err) throw err;
               })              
-            }
-            else {
-              console.log("Job already exists in database ....");
-            }
-          })
+            //}
+            //else {
+            //  console.log("Job already exists in database ....");
+           // }
+          //})
         });
         const data2 = await page.evaluate(() => {
           return document.querySelector('p[class="sc-1y4fh76-4 fMBjOI"]').innerText
