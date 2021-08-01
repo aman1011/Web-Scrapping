@@ -1,13 +1,14 @@
 //let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
 let categories = ["technician", "marketing", "human_resource"];
 let cities = ['kanpur'];
-
+global.to_insert = []
 /*Scrapping */
 const { exit } = require('process');
 const puppeteer = require('puppeteer');
 const fs = require('fs')
 const { Pool, Client } = require('pg');
 const { Console } = require('console');
+const pool = new Pool()
 
 
 dataToWrite = "Job Title" + ", " + "Company" + ", " + "Salary" + ", " + "Experience" + ", " + "Education" + "\n";
@@ -148,25 +149,8 @@ async function get_data() {
           dataLine = jobLookup['Job Title'] + ', ' + jobLookup['Company'] + ', ' + jobLookup['Salary'].substring(1) + ', ' + jobLookup['Experience'] + ', ' + jobLookup['Education'] + "\n";
           dataToWrite = dataToWrite + dataLine;
           //console.log(jobLookup);
-          
-          // Check if entry in the jobs is already present.
-          //var search_sql = "SELECT * from jobs where city_id = $1 and category_id = $2 and job_title = $3 and experience = $4 and education = $5 and salary = $6 and company_name = $7";
-          //console.log("Checking the row with the following value ....")
-          //console.log(city_id + " " + category_id + " " +  jobDetails[0] + " " +  jobDetails[8] + " " +  jobDetails[12] + " " +  jobDetails[4] + " " +  jobDetails[2]);
-          //client.query(search_sql, [city_id, category_id, jobDetails[0], jobDetails[8], jobDetails[12], jobDetails[4], jobDetails[2]], (err, result) => {
-          //  if (err) throw err;
-           // if (result.rowCount == 0) {
-              console.log("Inserting row with following values ....");
-              console.log(city_id + " " + category_id + " " +  jobDetails[0] + " " +  jobDetails[8] + " " +  jobDetails[12] + " " +  jobDetails[4] + " " +  jobDetails[2]);
-              insert_query = "INSERT INTO jobs (city_id, category_id, job_title, experience, education, salary, company_name) VALUES($1, $2, $3, $4, $5, $6, $7)"
-              client.query(insert_query, [city_id, category_id, jobDetails[0], jobDetails[8], jobDetails[12], jobDetails[4], jobDetails[2]], (err, result) => {
-                if (err) throw err;
-              })              
-            //}
-            //else {
-            //  console.log("Job already exists in database ....");
-           // }
-          //})
+          //  Add to entries.
+          to_insert.push([city_id, category_id, jobDetails[0], jobDetails[8], jobDetails[12], jobDetails[4], jobDetails[2]]);
         });
         const data2 = await page.evaluate(() => {
           return document.querySelector('p[class="sc-1y4fh76-4 fMBjOI"]').innerText
@@ -176,15 +160,10 @@ async function get_data() {
       }
     } 
   } 
-  console.log(dataToWrite);
+  //console.log(dataToWrite);
   writeToCSVFile(dataToWrite);
-  try {
-    await browser.close();
-  } catch (error) {
-    console.log("Typical browser error at the end ....!");
-  }
-  
-  return dataToWrite;
+  //console.log(to_insert)
+  return to_insert;
 }
 
 
@@ -193,15 +172,64 @@ function writeToCSVFile(data) {
   fs.writeFile(filename, dataToWrite, err => {
     if (err) {
       console.log('Error writing to csv file', err);
-    } else {
-      console.log(`saved as ${filename}`);
     }
   });
 }
 
+function insert_into_data(to_insert) {
+  //console.log(to_insert);
+  console.log(to_insert.length)
 
-data = get_data();
 
+  to_insert.forEach(element => {
+    var search_sql = "SELECT * from jobs where city_id = " + element[0] + 
+      " and category_id = " + element[1] + 
+      " and job_title =  '" + element[2] + "'" +
+      " and experience =  '" + element[3]  + "'" +
+      " and education = '" + element[4] + "'" +
+      " and salary = '" + element[5] + "'" + 
+      " and company_name = '" + element[6] + "'"
+
+    // console.log(search_sql);
+    client.query(search_sql, (err, res) => {
+      if (err) throw err;
+      if (res.rowCount == 0) {
+        // Insert the data.
+        insert_query = "INSERT INTO jobs (city_id, category_id, job_title, experience, education, salary, company_name) VALUES($1, $2, $3, $4, $5, $6, $7)"
+        client.query(insert_query, [element[0],element[1],element[2],element[3],element[4],element[5],element[6]], (err, result) => {
+          if (err) throw err;
+        })
+      }
+      else {
+        "The job is already present in the database ...."
+      }
+    })
+  });
+}
+
+
+async function put_data () {
+  data = await get_data()
+  //console.log(data)
+  //console.log(data.length)
+  return data
+}
+
+
+put_data().then(res => {
+  console.log(res.length)
+  insert_into_data(res)
+  exit(0);
+})
+
+
+//console.log(to_put)
+//console.log("Yo printing length")
+//console.log(to_put.length)
+//data = await get_data();
+//console.log(data)
+//console.log(to_insert.length)
+//insert_into_data(to_insert)
 
 
 
