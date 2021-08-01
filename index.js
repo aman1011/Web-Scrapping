@@ -208,15 +208,6 @@ function insert_into_data(to_insert) {
   });
 }
 
-/*
-async function put_data () {
-  data = await get_data()
-  //console.log(data)
-  //console.log(data.length)
-  return data
-}
-*/
-
 get_data().then(res => {
   console.log(res.length)
   to_insert.forEach(element => {
@@ -241,15 +232,6 @@ get_data().then(res => {
   });
 })
 
-
-
-//console.log(to_put)
-//console.log("Yo printing length")
-//console.log(to_put.length)
-//data = await get_data();
-//console.log(data)
-//console.log(to_insert.length)
-//insert_into_data(to_insert)
 
 
 
