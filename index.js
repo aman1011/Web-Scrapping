@@ -1,6 +1,6 @@
-//let cities = ['kanpur', 'lucknow', 'chandigarh', 'ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
+let cities = ['kanpur', 'lucknow', 'chandigarh','ahmedabad', 'bengaluru', 'chennai', 'delhi_ncr', 'hyderabad', 'jaipur', 'kolkata', 'ludhiana', 'mumbai', 'pune', 'ranchi','surat'];
 let categories = ["technician", "marketing", "human_resource"];
-let cities = ['kanpur'];
+//let cities = ['kanpur'];
 global.to_insert = []
 /*Scrapping */
 const { exit } = require('process');
@@ -57,7 +57,7 @@ async function get_data() {
 
     
     for (var j = 0; j < categories.length; j++) {
-      console.log("Processing category " + categories[j] + " ....");
+      console.log("    Processing category " + categories[j] + " ....");
 
       // check if the category data is present in the database.
       // If not, then add.
@@ -90,8 +90,8 @@ async function get_data() {
       city = cities[i];
       category = categories[j];
 
-      console.log("Finding jobs for " + category + " in " + city);
-      page.goto('https://apna.co/jobs/jobs-in-' + cities[i]);
+      console.log("        Finding jobs for " + category + " in " + city);
+      page.goto('https://apna.co/jobs/jobs-in-' + cities[i], {waitUntil: 'load', timeout: 0});
       await page.waitForSelector('body');
 
       const data = await page.evaluate(() => {
@@ -104,7 +104,8 @@ async function get_data() {
       pageCount = 1;
       morePagePresent = true
       while (morePagePresent) {
-        page.goto('https://apna.co/jobs/'+category+'-jobs-in-' + city + "?page=" + pageCount);
+        page.goto('https://apna.co/jobs/'+category+'-jobs-in-' + city + "?page=" + pageCount, {waitUntil: 'load', timeout: 0});
+        console.log("       Hitting page " + pageCount + " ....")
         //console.log("Hitting the URL " + 'https://apna.co/jobs/'+category+'-jobs-in-' + city + "?page=" + pageCount);
         await page.waitForSelector('body');
 
@@ -219,18 +220,14 @@ async function put_data () {
 get_data().then(res => {
   console.log(res.length)
   to_insert.forEach(element => {
-    var search_sql = "SELECT * from jobs where city_id = " + element[0] + 
-      " and category_id = " + element[1] + 
-      " and job_title =  '" + element[2] + "'" +
-      " and experience =  '" + element[3]  + "'" +
-      " and education = '" + element[4] + "'" +
-      " and salary = '" + element[5] + "'" + 
-      " and company_name = '" + element[6] + "'"
+    var param_search = "SELECT * from jobs where city_id = $1 and category_id = $2 and job_title = $3 and experience = $4 and education = $5 and salary = $6 and company_name = $7"
 
-    // console.log(search_sql);
-    client.query(search_sql, (err, res) => {
-      if (err) throw err;
-      if (res.rowCount == 0) {
+    //console.log();
+    client.query(param_search, [element[0], element[1], element[2], element[3], element[4], element[5], element[6]], (err, res) => {
+      if (err) {
+        console.log(err);
+      }
+      if (res && res.rowCount == 0) {
         // Insert the data.
         insert_query = "INSERT INTO jobs (city_id, category_id, job_title, experience, education, salary, company_name) VALUES($1, $2, $3, $4, $5, $6, $7)"
         client.query(insert_query, [element[0],element[1],element[2],element[3],element[4],element[5],element[6]], (err, result) => {
